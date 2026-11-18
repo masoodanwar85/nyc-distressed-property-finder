@@ -1,0 +1,65 @@
+{% extends "leads/base.html" %}
+{% block title %}{{ b.address }}{% endblock %}
+{% block content %}
+<p class="small"><a href="{% url 'lead_list' %}">&larr; Back to leads</a></p>
+<h1>{{ b.address }}</h1>
+<p class="muted">Score {{ b.score }} &middot;
+  {% if b.on_class_b_list %}<span class="tag good">On city Class B list</span>{% else %}<span class="tag">Legal use unverified</span>{% endif %}</p>
+
+<div class="grid">
+  <div class="card">
+    <h2 style="margin-top:0">Building</h2>
+    <dl>
+      <dt>BIN</dt><dd>{{ b.bin|default:"-" }}</dd>
+      <dt>BBL</dt><dd>{{ b.bbl|default:"-" }}</dd>
+      <dt>HPD building ID</dt><dd>{{ b.hpd_building_id }}</dd>
+      <dt>Class A units</dt><dd>{{ b.class_a_units }}</dd>
+      <dt>Class B units</dt><dd>{{ b.class_b_units }}</dd>
+      <dt>DOB class</dt><dd>{{ b.dob_building_class|default:"-" }}</dd>
+      <dt>First seen</dt><dd>{{ b.first_seen|default:"-" }}</dd>
+    </dl>
+  </div>
+  <div class="card">
+    <h2 style="margin-top:0">Distress signals</h2>
+    <dl>
+      <dt>Tax owed</dt><dd>${{ b.tax_owed|floatformat:"2g" }}{% if b.tax_as_of %} <span class="muted small">(data as of {{ b.tax_as_of }})</span>{% endif %}</dd>
+      <dt>Unpaid periods</dt><dd>{{ b.unpaid_periods }}</dd>
+      <dt>Lien list</dt><dd>{% if b.lien_stage %}{{ b.lien_stage }}, {{ b.lien_month|date:"F Y" }}{% if b.lien_water_only %} (water debt only){% endif %}{% else %}Not listed{% endif %}</dd>
+      <dt>Registration ends</dt><dd>{{ b.registration_end|default:"-" }}</dd>
+    </dl>
+    {% if b.score_reasons %}<h2>Why it ranks</h2><ul class="plain">{% for r in b.score_reasons %}<li>{{ r }}</li>{% endfor %}</ul>{% endif %}
+  </div>
+  <div class="card">
+    <h2 style="margin-top:0">Owner</h2>
+    <dl>
+      <dt>Registered owner</dt><dd>{{ b.owner_name|default:"-" }}</dd>
+      <dt>Managing agent</dt><dd>{{ b.agent_name|default:"-" }}</dd>
+    </dl>
+    <h2>City records</h2>
+    <ul class="plain">
+      {% if b.dob_certificates_url %}<li><a href="{{ b.dob_certificates_url }}" target="_blank" rel="noopener">DOB certificates of occupancy</a></li>{% endif %}
+      <li><a href="{{ b.hpd_online_url }}" target="_blank" rel="noopener">HPD Online historical records (I-cards)</a></li>
+    </ul>
+  </div>
+</div>
+
+<h2>Status</h2>
+<form method="post" class="filters" style="margin-top:0">{% csrf_token %}
+  <input type="hidden" name="action" value="status">
+  <select name="status">{% for value, label in statuses %}<option value="{{ value }}" {% if b.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+  <button>Save status</button>
+</form>
+
+<h2>Notes</h2>
+<form method="post">{% csrf_token %}
+  <input type="hidden" name="action" value="note">
+  <textarea name="text" rows="3" style="width:100%;max-width:640px" placeholder="Add a note"></textarea><br>
+  <button style="margin-top:8px">Add note</button>
+</form>
+{% for note in b.notes.all %}
+  <div class="card" style="margin-top:12px;max-width:640px">
+    <div class="small muted">{{ note.author.username|default:"(deleted user)" }} &middot; {{ note.created|date:"M j, Y H:i" }}</div>
+    {{ note.text|linebreaksbr }}
+  </div>
+{% endfor %}
+{% endblock %}
